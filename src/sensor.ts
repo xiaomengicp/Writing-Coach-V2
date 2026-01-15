@@ -1,10 +1,6 @@
 import { Editor } from 'obsidian';
 import { WritingMetrics, EditEvent } from './types';
 import { CHINESE_ADJECTIVES, CHINESE_ABSTRACT_NOUNS, CHINESE_VERBS } from './chinese-words';
-import { Segment } from 'segmentit';
-
-// Initialize Chinese segmentation
-const segmentit = Segment();
 
 // Word lists for text analysis
 const ADJECTIVE_ENDINGS = ['ful', 'less', 'ous', 'ive', 'al', 'ic', 'able', 'ible', 'ish', 'ly', 'ary', 'ory'];
@@ -329,6 +325,7 @@ export class WritingSensor {
 
     /**
      * Segment text into words (handles both English and Chinese)
+     * For Chinese: uses n-gram matching (1-2 char combinations)
      */
     private segmentText(text: string): string[] {
         const words: string[] = [];
@@ -337,21 +334,25 @@ export class WritingSensor {
         const hasChinese = /[\u4e00-\u9fff]/.test(text);
 
         if (hasChinese) {
-            // Use segmentit for Chinese segmentation
-            try {
-                const segments = segmentit.doSegment(text);
-                for (const seg of segments) {
-                    const word = seg.w.trim().toLowerCase();
-                    if (word.length > 0) {
-                        words.push(word);
-                    }
-                }
-            } catch (e) {
-                // Fallback to simple split if segmentit fails
-                console.warn('[Sensor] segmentit failed, using fallback:', e);
-                const simpleWords = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-                words.push(...simpleWords);
+            // Simple n-gram approach for Chinese:
+            // Extract 1-char and 2-char combinations and check against word lists
+            const chineseChars = text.match(/[\u4e00-\u9fff]/g) || [];
+
+            // Add 2-char combinations (more common for Chinese words)
+            for (let i = 0; i < chineseChars.length - 1; i++) {
+                const twoChar = chineseChars[i] + chineseChars[i + 1];
+                words.push(twoChar);
             }
+
+            // Add single characters
+            for (const char of chineseChars) {
+                words.push(char);
+            }
+
+            // Also get English words if mixed text
+            const englishParts = text.replace(/[\u4e00-\u9fff]/g, ' ');
+            const englishWords = englishParts.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            words.push(...englishWords);
         } else {
             // English: split by whitespace
             const englishWords = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
