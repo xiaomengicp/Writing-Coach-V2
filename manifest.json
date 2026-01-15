@@ -1,0 +1,10 @@
+{
+  "id": "writing-coach",
+  "name": "Writing Coach",
+  "version": "2.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "An intelligent, psychoanalytically-informed writing coach with live methodology configuration. Monitors your writing process and provides context-aware coaching based on your methodology.",
+  "author": "Jo",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}

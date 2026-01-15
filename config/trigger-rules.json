@@ -1,0 +1,146 @@
+{
+  "triggers": {
+    "rushing": {
+      "name": "Writing Too Fast",
+      "description": "User is moving through material quickly, possibly avoiding depth",
+      "conditions": {
+        "wpm": "> 40",
+        "adjectiveRatio": "< 0.05",
+        "duration": "> 120"
+      },
+      "appliesTo": ["scene", "observation"],
+      "timing": {
+        "delay": 30,
+        "note": "Wait 30 seconds after conditions met before triggering"
+      },
+      "priority": "medium",
+      "coachingStyle": "gentle-brake",
+      "enableChat": false,
+      "systemPrompt": "The user is writing a scene but moving very quickly with few sensory details. Gently remind them to slow down. Ask about ONE specific sensory detail from what they just wrote. Keep it under 50 words. Examples: 'You mentioned the room. What did the light look like?' or 'Scene is moving fast. Want to pause and feel that moment?'",
+      "examples": [
+        "You mentioned [specific object]. What did it feel like?",
+        "This is moving quickly. Want to slow down here?",
+        "What did that space smell like?"
+      ]
+    },
+    
+    "abstract_drift": {
+      "name": "Drifting to Abstract",
+      "description": "User started with concrete scene but content becoming increasingly abstract",
+      "conditions": {
+        "abstractNounRatio": "increasing",
+        "verbRatio": "decreasing",
+        "paragraphsSinceLastCoaching": "> 2"
+      },
+      "appliesTo": ["scene"],
+      "timing": {
+        "delay": 0,
+        "note": "Trigger after detecting pattern in 2-3 paragraphs"
+      },
+      "priority": "medium",
+      "coachingStyle": "awareness-prompt",
+      "enableChat": false,
+      "systemPrompt": "The user marked this as scene writing but the content is becoming more abstract. First, acknowledge what they wrote. Then ask if this shift is intentional (switching to reflection) or if they want to stay in the scene. If they want to stay in scene, point to a concrete detail they could expand. Keep it under 50 words.",
+      "examples": [
+        "This is getting more abstract. Are you shifting to reflection, or still in the scene?",
+        "You started with [concrete detail]. Want to stay there a bit longer?",
+        "Feels like you're moving toward reflection. Is that intentional?"
+      ]
+    },
+    
+    "stuck": {
+      "name": "Stuck/Blocked",
+      "description": "User has paused for extended period, possibly stuck",
+      "conditions": {
+        "pauseDuration": "> 180",
+        "currentParagraphLength": "< 50"
+      },
+      "appliesTo": ["all"],
+      "timing": {
+        "delay": 0,
+        "note": "Trigger immediately after 3 minutes, but gently"
+      },
+      "priority": "high",
+      "coachingStyle": "conversational",
+      "enableChat": true,
+      "systemPrompt": "The user has been paused for several minutes. They might be stuck. Open with a gentle acknowledgment and question. If they respond, ask what specifically is difficult - is it not knowing how to say something, or uncertainty about whether to say it, or touching painful material? Offer to help them find a way forward or suggest switching to something else. Be warm and supportive.",
+      "initialMessage": "Paused here for a bit. Want to talk about what's happening?",
+      "conversationGuidance": "In conversation, help them identify what kind of stuck: (1) don't know how to say it, (2) not sure if I should say it, (3) painful material, (4) structural confusion. Offer specific help based on their answer."
+    },
+    
+    "starting_confusion": {
+      "name": "Difficulty Starting",
+      "description": "User at beginning of new paragraph but not writing",
+      "conditions": {
+        "pauseLocation": "start",
+        "pauseDuration": "> 60",
+        "paragraphsSinceLastCoaching": "> 0"
+      },
+      "appliesTo": ["all"],
+      "timing": {
+        "delay": 0,
+        "note": "After 1 minute at start of paragraph"
+      },
+      "priority": "medium",
+      "coachingStyle": "suggestion",
+      "enableChat": false,
+      "systemPrompt": "The user is at the start of a new paragraph and has paused. Based on what they just wrote, suggest 2-3 concrete options for where to begin. Could be: continue the scene, switch to reflection, start with a specific object, or answer a question. Frame as options, not directions. Keep under 60 words.",
+      "examples": [
+        "Starting a new section. Want to continue that scene, or shift to reflection?",
+        "A few ways to begin: you could start with [object], or ask [question], or...",
+        "What wants to be said next?"
+      ]
+    },
+    
+    "getting_tired": {
+      "name": "Getting Tired",
+      "description": "Writing energy declining, possibly time for a break",
+      "conditions": {
+        "wpmTrend": "decreasing",
+        "sessionDuration": "> 30",
+        "currentParagraphLength": "decreasing"
+      },
+      "appliesTo": ["all"],
+      "timing": {
+        "delay": 900,
+        "note": "Observe for 15 minutes before suggesting break"
+      },
+      "priority": "low",
+      "coachingStyle": "gentle-presence",
+      "enableChat": false,
+      "systemPrompt": "The user has been writing for a while and seems to be slowing down. This might be natural tiredness. Gently ask if they want to take a break or keep going. Keep it very short - under 30 words. Don't make assumptions about why they're slowing down.",
+      "examples": [
+        "You've been at this for a while. Want to pause, or keep going?",
+        "Time for a break?",
+        "Writing for [X] minutes. How are you feeling?"
+      ]
+    }
+  },
+  
+  "globalSettings": {
+    "minimumIntervalBetweenTriggers": 300,
+    "minimumIntervalBetweenTriggersNote": "5 minutes minimum between any triggers to avoid overwhelming user",
+    
+    "priorityOverride": {
+      "high": 180,
+      "highNote": "High priority triggers can override after 3 minutes"
+    },
+    
+    "conversationRules": {
+      "autoCloseOnWriting": true,
+      "autoCloseOnWritingNote": "If user starts writing during conversation, automatically close chat",
+      "maxConversationLength": 10,
+      "maxConversationLengthNote": "After 10 exchanges, suggest ending conversation"
+    }
+  },
+  
+  "notes": {
+    "editing": "You can edit this file to adjust conditions, timing, or add new triggers.",
+    "conditions": "Condition syntax: '> 40' (greater than), '< 0.05' (less than), 'increasing' (trend), 'decreasing' (trend)",
+    "timing": "Delay in seconds after conditions are met",
+    "appliesTo": "Array of writing type IDs. Use ['all'] to apply to all types.",
+    "enableChat": "If true, opens conversational mode where user can have multi-turn dialogue",
+    "systemPrompt": "This text is sent to Claude when generating coaching for this trigger",
+    "priority": "high/medium/low - affects rate limiting and override behavior"
+  }
+}

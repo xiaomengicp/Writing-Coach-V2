@@ -1,0 +1,83 @@
+{
+  "types": [
+    {
+      "id": "scene",
+      "name": "🎬 Scene",
+      "description": "Scene writing: specific time/space/people/events",
+      "triggers": ["rushing", "abstract_drift"],
+      "targetMetrics": {
+        "wpm": {
+          "ideal": "20-35",
+          "warning": "> 40"
+        },
+        "adjectiveRatio": {
+          "minimum": 0.05,
+          "ideal": "0.08-0.15"
+        },
+        "abstractNounRatio": {
+          "maximum": 0.2
+        }
+      },
+      "coachingGuidance": "Encourage slowing down, sensory details, staying present in the moment"
+    },
+    {
+      "id": "reflection",
+      "name": "💭 Reflection",
+      "description": "Reflection: transitioning from scene to thinking",
+      "triggers": ["abstract_drift", "stuck"],
+      "targetMetrics": {
+        "abstractNounRatio": {
+          "acceptable": "0.2-0.4",
+          "warning": "> 0.5"
+        }
+      },
+      "allowAbstract": true,
+      "coachingGuidance": "Support questioning posture, watch for excessive abstraction, maintain connection to concrete"
+    },
+    {
+      "id": "memory",
+      "name": "📝 Memory Work",
+      "description": "Memory work: processing painful material",
+      "triggers": ["stuck", "getting_tired"],
+      "needsMoreSupport": true,
+      "targetMetrics": {
+        "pauseTolerance": "higher",
+        "deletionTolerance": "higher"
+      },
+      "coachingGuidance": "Offer emotional support, acknowledge difficulty, give permission to take time or switch"
+    },
+    {
+      "id": "dialogue",
+      "name": "💬 Dialogue/Intertext",
+      "description": "Dialogue, quotations, literary references",
+      "triggers": ["stuck", "starting_confusion"],
+      "coachingGuidance": "Help with integration of quotes, connection to narrative"
+    },
+    {
+      "id": "observation",
+      "name": "👁️ Observation",
+      "description": "Observation, daily details, breathing space",
+      "triggers": ["rushing"],
+      "targetMetrics": {
+        "wpm": {
+          "acceptable": "any"
+        }
+      },
+      "coachingGuidance": "These moments matter for rhythm, encourage sensory detail even in 'small' moments"
+    },
+    {
+      "id": "transition",
+      "name": "🔄 Transition",
+      "description": "Section/paragraph transitions",
+      "triggers": ["starting_confusion", "stuck"],
+      "coachingGuidance": "Offer concrete starting options, remind can start anywhere and reorganize later"
+    }
+  ],
+  
+  "notes": {
+    "editing": "You can edit this file to add new types, modify descriptions, or adjust target metrics.",
+    "triggers": "Each type specifies which triggers apply. 'rushing' and 'abstract_drift' are most common for scene work.",
+    "targetMetrics": "These are guidelines for the trigger engine. If metrics fall outside these ranges for this type, triggers may fire.",
+    "coachingGuidance": "This text is included in the system prompt when coaching for this type."
+  }
+}
