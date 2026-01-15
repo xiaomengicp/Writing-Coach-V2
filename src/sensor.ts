@@ -1,6 +1,10 @@
 import { Editor } from 'obsidian';
 import { WritingMetrics, EditEvent } from './types';
 import { CHINESE_ADJECTIVES, CHINESE_ABSTRACT_NOUNS, CHINESE_VERBS } from './chinese-words';
+import Segment from 'segmentit';
+
+// Initialize Chinese segmentation
+const segmentit = Segment();
 
 // Word lists for text analysis
 const ADJECTIVE_ENDINGS = ['ful', 'less', 'ous', 'ive', 'al', 'ic', 'able', 'ible', 'ish', 'ly', 'ary', 'ory'];
@@ -279,9 +283,11 @@ export class WritingSensor {
 
     /**
      * Analyze text for adjectives, verbs, abstract nouns
+     * Uses NLP segmentation for Chinese text
      */
     private analyzeText(text: string): void {
-        const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+        // Get all words (English split by space, Chinese segmented by NLP)
+        const words = this.segmentText(text);
         const totalWords = words.length;
 
         if (totalWords === 0) {
@@ -300,7 +306,9 @@ export class WritingSensor {
         const verbs = words.filter(w => this.isVerb(w));
         this.metrics.verbRatio = verbs.length / totalWords;
 
-        // Count abstract nouns (English + Chinese)\n        const abstractNouns = words.filter(w => this.isAbstractNoun(w));\n        this.metrics.abstractNounRatio = abstractNouns.length / totalWords;
+        // Count abstract nouns (English + Chinese)
+        const abstractNouns = words.filter(w => this.isAbstractNoun(w));
+        this.metrics.abstractNounRatio = abstractNouns.length / totalWords;
 
         // Calculate average sentence length
         const sentences = text.split(/[.!?。！？]+/).filter(s => s.trim().length > 0);
@@ -317,6 +325,40 @@ export class WritingSensor {
         const paragraphs = text.split(/\n\n+/);
         const lastParagraph = paragraphs[paragraphs.length - 1] || '';
         this.metrics.currentParagraphLength = this.countWords(lastParagraph);
+    }
+
+    /**
+     * Segment text into words (handles both English and Chinese)
+     */
+    private segmentText(text: string): string[] {
+        const words: string[] = [];
+
+        // Check if text contains Chinese characters
+        const hasChinese = /[\u4e00-\u9fff]/.test(text);
+
+        if (hasChinese) {
+            // Use segmentit for Chinese segmentation
+            try {
+                const segments = segmentit.doSegment(text);
+                for (const seg of segments) {
+                    const word = seg.w.trim().toLowerCase();
+                    if (word.length > 0) {
+                        words.push(word);
+                    }
+                }
+            } catch (e) {
+                // Fallback to simple split if segmentit fails
+                console.warn('[Sensor] segmentit failed, using fallback:', e);
+                const simpleWords = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                words.push(...simpleWords);
+            }
+        } else {
+            // English: split by whitespace
+            const englishWords = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            words.push(...englishWords);
+        }
+
+        return words;
     }
 
     /**
