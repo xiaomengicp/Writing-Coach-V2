@@ -161,7 +161,9 @@ export class CoachingView extends ItemView {
      */
     setCurrentType(type: string): void {
         this.currentType = type;
-        this.typeSelectorEl.value = type;
+        if (this.typeSelectorEl) {
+            this.typeSelectorEl.value = type;
+        }
     }
 
     /**

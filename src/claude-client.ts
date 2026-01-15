@@ -1,3 +1,4 @@
+import { requestUrl } from 'obsidian';
 import { WritingMetrics, TriggerRule, ConversationMessage, CoachingContext, APIUsage } from './types';
 
 /**
@@ -186,7 +187,7 @@ Generate a brief coaching message (under 50 words).`;
     }
 
     /**
-     * Call Claude API
+     * Call Claude API using Obsidian's requestUrl to bypass CORS
      */
     private async callAPI(
         systemPrompt: string,
@@ -208,44 +209,45 @@ Generate a brief coaching message (under 50 words).`;
 
         console.log('[ClaudeClient] Calling API...');
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'x-api-key': this.apiKey,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
+        try {
+            const response = await requestUrl({
+                url: 'https://api.anthropic.com/v1/messages',
+                method: 'POST',
+                headers: {
+                    'x-api-key': this.apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[ClaudeClient] API error:', response.status, errorText);
+            const data = response.json;
 
-            if (response.status === 401) {
+            // Track usage
+            if (data.usage) {
+                this.usage.calls++;
+                this.usage.inputTokens += data.usage.input_tokens || 0;
+                this.usage.outputTokens += data.usage.output_tokens || 0;
+                // Pricing: $3/M input, $15/M output (approximate)
+                this.usage.estimatedCost +=
+                    ((data.usage.input_tokens || 0) / 1000000 * 3) +
+                    ((data.usage.output_tokens || 0) / 1000000 * 15);
+            }
+
+            console.log('[ClaudeClient] API response received');
+            return data.content[0].text;
+
+        } catch (error: any) {
+            console.error('[ClaudeClient] API error:', error);
+
+            if (error.status === 401) {
                 throw new Error('Invalid API key. Please check your settings.');
-            } else if (response.status === 429) {
+            } else if (error.status === 429) {
                 throw new Error('Rate limited. Please try again in a moment.');
             } else {
-                throw new Error(`API error: ${response.status}`);
+                throw new Error(`API error: ${error.message || error.status || 'Unknown error'}`);
             }
         }
-
-        const data = await response.json();
-
-        // Track usage
-        if (data.usage) {
-            this.usage.calls++;
-            this.usage.inputTokens += data.usage.input_tokens || 0;
-            this.usage.outputTokens += data.usage.output_tokens || 0;
-            // Pricing: $3/M input, $15/M output (approximate)
-            this.usage.estimatedCost +=
-                ((data.usage.input_tokens || 0) / 1000000 * 3) +
-                ((data.usage.output_tokens || 0) / 1000000 * 15);
-        }
-
-        console.log('[ClaudeClient] API response received');
-        return data.content[0].text;
     }
 
     /**

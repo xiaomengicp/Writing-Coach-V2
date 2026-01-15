@@ -78,6 +78,7 @@ export class WritingSensor {
     private editHistory: EditEvent[] = [];
     private recentWPMReadings: number[] = [];
     private onMetricsUpdate: ((metrics: WritingMetrics) => void) | null = null;
+    private isFirstEdit: boolean = true; // Flag to skip first "edit" which is just loading the file
 
     constructor() {
         this.metrics = this.getDefaultMetrics();
@@ -121,11 +122,19 @@ export class WritingSensor {
         const currentText = editor.getValue();
         const now = Date.now();
 
+        // Skip the first "change" which is just loading the file
+        if (this.isFirstEdit) {
+            this.lastText = currentText;
+            this.isFirstEdit = false;
+            console.log('[Sensor] Initial file load, skipping WPM count');
+            return;
+        }
+
         // Calculate what was added/removed
         const addedText = this.getAddedText(this.lastText, currentText);
         const removedText = this.getRemovedText(this.lastText, currentText);
 
-        // Record edit event
+        // Record edit event only if there's actual change from user typing
         if (addedText || removedText) {
             this.editHistory.push({
                 timestamp: now,
@@ -354,10 +363,27 @@ export class WritingSensor {
     }
 
     /**
-     * Count words in text
+     * Count words in text (handles both English and Chinese)
+     * For Chinese: each character counts as ~0.5 words (since Chinese is more dense)
+     * For English: standard space-separated word count
      */
     private countWords(text: string): number {
-        return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+        if (!text || text.trim().length === 0) return 0;
+
+        // Separate Chinese characters and English words
+        // Chinese characters: \u4e00-\u9fff
+        const chineseChars = text.match(/[\u4e00-\u9fff]/g) || [];
+
+        // Remove Chinese characters to count English words
+        const englishOnly = text.replace(/[\u4e00-\u9fff]/g, ' ');
+        const englishWords = englishOnly.trim().split(/\s+/).filter(w => w.length > 0);
+
+        // Chinese: each character counts as 0.5 word (to normalize with English WPM)
+        // English: each word counts as 1
+        const chineseWordCount = chineseChars.length * 0.5;
+        const englishWordCount = englishWords.length;
+
+        return Math.round(chineseWordCount + englishWordCount);
     }
 
     /**
@@ -376,6 +402,7 @@ export class WritingSensor {
         this.sessionStartTime = Date.now();
         this.editHistory = [];
         this.recentWPMReadings = [];
+        this.isFirstEdit = true;
         this.metrics = this.getDefaultMetrics();
     }
 

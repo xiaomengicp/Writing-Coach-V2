@@ -187,24 +187,31 @@ export default class WritingCoachPlugin extends Plugin {
     async activateView(): Promise<void> {
         const { workspace } = this.app;
 
-        let leaf: WorkspaceLeaf | null = null;
-        const leaves = workspace.getLeavesOfType(COACHING_VIEW_TYPE);
+        // First check if view is already open
+        let leaf = workspace.getLeavesOfType(COACHING_VIEW_TYPE)[0];
 
-        if (leaves.length > 0) {
-            leaf = leaves[0];
-        } else {
-            leaf = workspace.getRightLeaf(false);
-            if (leaf) {
-                await leaf.setViewState({
+        if (!leaf) {
+            // Create a new leaf in the right sidebar
+            const rightLeaf = workspace.getRightLeaf(false);
+            if (rightLeaf) {
+                await rightLeaf.setViewState({
                     type: COACHING_VIEW_TYPE,
                     active: true
                 });
+                leaf = rightLeaf;
             }
         }
 
+        // Reveal the leaf
         if (leaf) {
             workspace.revealLeaf(leaf);
+            // Re-setup the view in case it was just created
+            if (this.coachingView) {
+                this.setupCoachingView();
+            }
         }
+
+        console.log('[WritingCoach] activateView called, leaf:', leaf ? 'found' : 'not found');
     }
 
     /**
