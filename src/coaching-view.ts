@@ -25,12 +25,16 @@ export class CoachingView extends ItemView {
     private showMetrics: boolean = true;
     private isInConversation: boolean = false;
     private conversationHistory: ConversationMessage[] = [];
+    private isPaused: boolean = false;
 
     // Callbacks
     private onTypeChange: ((type: string) => void) | null = null;
     private onChatMessage: ((message: string) => void) | null = null;
     private onFeedback: ((helpful: boolean) => void) | null = null;
     private onDismiss: (() => void) | null = null;
+    private onPause: (() => void) | null = null;
+    private onResume: (() => void) | null = null;
+    private onReset: (() => void) | null = null;
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
@@ -72,20 +76,71 @@ export class CoachingView extends ItemView {
         onChatMessage?: (message: string) => void;
         onFeedback?: (helpful: boolean) => void;
         onDismiss?: () => void;
+        onPause?: () => void;
+        onResume?: () => void;
+        onReset?: () => void;
     }): void {
         this.onTypeChange = callbacks.onTypeChange || null;
         this.onChatMessage = callbacks.onChatMessage || null;
         this.onFeedback = callbacks.onFeedback || null;
         this.onDismiss = callbacks.onDismiss || null;
+        this.onPause = callbacks.onPause || null;
+        this.onResume = callbacks.onResume || null;
+        this.onReset = callbacks.onReset || null;
     }
 
     /**
-     * Build header with type selector
+     * Build header with type selector and control buttons
      */
     private buildHeader(): void {
         const header = this.rootEl.createDiv({ cls: 'coach-header' });
 
-        header.createEl('h4', { text: '✍️ Writing Coach' });
+        const titleRow = header.createDiv({ cls: 'coach-title-row' });
+        titleRow.createEl('h4', { text: '✍️ Writing Coach' });
+
+        // Status indicator and control buttons
+        const controlsRow = header.createDiv({ cls: 'coach-controls' });
+
+        // Status text
+        const statusEl = controlsRow.createSpan({ cls: 'coach-status', text: '● 运行中' });
+        statusEl.addClass('status-running');
+
+        // Pause/Resume button
+        const pauseBtn = controlsRow.createEl('button', {
+            cls: 'coach-btn pause-btn',
+            text: '⏸ 暂停'
+        });
+        pauseBtn.addEventListener('click', () => {
+            if (this.isPaused) {
+                this.isPaused = false;
+                pauseBtn.textContent = '⏸ 暂停';
+                statusEl.textContent = '● 运行中';
+                statusEl.removeClass('status-paused');
+                statusEl.addClass('status-running');
+                this.onResume?.();
+            } else {
+                this.isPaused = true;
+                pauseBtn.textContent = '▶ 恢复';
+                statusEl.textContent = '● 已暂停';
+                statusEl.removeClass('status-running');
+                statusEl.addClass('status-paused');
+                this.onPause?.();
+            }
+        });
+
+        // Reset button
+        const resetBtn = controlsRow.createEl('button', {
+            cls: 'coach-btn reset-btn',
+            text: '↺ 重置'
+        });
+        resetBtn.addEventListener('click', () => {
+            this.onReset?.();
+            statusEl.textContent = '● 运行中';
+            statusEl.removeClass('status-paused');
+            statusEl.addClass('status-running');
+            this.isPaused = false;
+            pauseBtn.textContent = '⏸ 暂停';
+        });
 
         // Type selector
         const selectorContainer = header.createDiv({ cls: 'type-selector-container' });

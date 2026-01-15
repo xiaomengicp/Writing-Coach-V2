@@ -165,11 +165,25 @@ export default class WritingCoachPlugin extends Plugin {
             },
             onFeedback: (helpful) => {
                 console.log('[WritingCoach] Feedback:', helpful ? 'helpful' : 'not helpful');
-                // Could log this for analytics
             },
             onDismiss: () => {
                 this.claudeClient.resetConversation();
                 console.log('[WritingCoach] Coaching dismissed');
+            },
+            onPause: () => {
+                this.sensor.pause();
+                this.triggerEngine.pause();
+                console.log('[WritingCoach] Monitoring paused');
+            },
+            onResume: () => {
+                this.sensor.resume();
+                this.triggerEngine.resume();
+                console.log('[WritingCoach] Monitoring resumed');
+            },
+            onReset: () => {
+                this.sensor.reset();
+                this.triggerEngine.reset();
+                console.log('[WritingCoach] Session reset');
             }
         });
     }
@@ -224,6 +238,11 @@ export default class WritingCoachPlugin extends Plugin {
         if (view instanceof MarkdownView) {
             const file = view.file;
             if (file) {
+                // Detect file change and reset sensor
+                if (file.path !== this.currentFile) {
+                    this.sensor.resetForNewFile(file.path);
+                }
+
                 this.currentFile = file.path;
                 this.lastContent = view.editor.getValue();
 

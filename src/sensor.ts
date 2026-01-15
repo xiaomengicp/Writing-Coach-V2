@@ -1,5 +1,6 @@
 import { Editor } from 'obsidian';
 import { WritingMetrics, EditEvent } from './types';
+import { CHINESE_ADJECTIVES, CHINESE_ABSTRACT_NOUNS, CHINESE_VERBS } from './chinese-words';
 
 // Word lists for text analysis
 const ADJECTIVE_ENDINGS = ['ful', 'less', 'ous', 'ive', 'al', 'ic', 'able', 'ible', 'ish', 'ly', 'ary', 'ory'];
@@ -78,10 +79,51 @@ export class WritingSensor {
     private editHistory: EditEvent[] = [];
     private recentWPMReadings: number[] = [];
     private onMetricsUpdate: ((metrics: WritingMetrics) => void) | null = null;
-    private isFirstEdit: boolean = true; // Flag to skip first "edit" which is just loading the file
+    private isFirstEdit: boolean = true;
+    private isPaused: boolean = false;
+    private currentFilePath: string = '';
 
     constructor() {
         this.metrics = this.getDefaultMetrics();
+    }
+
+    /**
+     * Pause monitoring (stops trigger checks but keeps session)
+     */
+    pause(): void {
+        this.isPaused = true;
+        console.log('[Sensor] Paused');
+    }
+
+    /**
+     * Resume monitoring
+     */
+    resume(): void {
+        this.isPaused = false;
+        this.lastEditTime = Date.now(); // Reset pause timer
+        console.log('[Sensor] Resumed');
+    }
+
+    /**
+     * Check if paused
+     */
+    getIsPaused(): boolean {
+        return this.isPaused;
+    }
+
+    /**
+     * Reset for new file (called when switching files)
+     */
+    resetForNewFile(filePath: string): void {
+        if (filePath === this.currentFilePath) return;
+
+        this.currentFilePath = filePath;
+        this.isFirstEdit = true;
+        this.editHistory = [];
+        this.lastText = '';
+        this.lastEditTime = Date.now();
+        // Keep session duration running
+        console.log('[Sensor] Reset for new file:', filePath);
     }
 
     /**
@@ -258,9 +300,7 @@ export class WritingSensor {
         const verbs = words.filter(w => this.isVerb(w));
         this.metrics.verbRatio = verbs.length / totalWords;
 
-        // Count abstract nouns
-        const abstractNouns = words.filter(w => ABSTRACT_NOUNS.has(w));
-        this.metrics.abstractNounRatio = abstractNouns.length / totalWords;
+        // Count abstract nouns (English + Chinese)\n        const abstractNouns = words.filter(w => this.isAbstractNoun(w));\n        this.metrics.abstractNounRatio = abstractNouns.length / totalWords;
 
         // Calculate average sentence length
         const sentences = text.split(/[.!?。！？]+/).filter(s => s.trim().length > 0);
@@ -280,20 +320,35 @@ export class WritingSensor {
     }
 
     /**
-     * Check if word is an adjective (simple heuristic)
+     * Check if word is an adjective (English or Chinese)
      */
     private isAdjective(word: string): boolean {
+        // English adjectives
         if (COMMON_ADJECTIVES.has(word)) return true;
-        return ADJECTIVE_ENDINGS.some(ending => word.endsWith(ending));
+        if (ADJECTIVE_ENDINGS.some(ending => word.endsWith(ending))) return true;
+        // Chinese adjectives
+        if (CHINESE_ADJECTIVES.has(word)) return true;
+        return false;
     }
 
     /**
-     * Check if word is a verb (simple heuristic)
+     * Check if word is a verb (English or Chinese)
      */
     private isVerb(word: string): boolean {
+        // English verbs
         if (COMMON_VERBS.has(word)) return true;
-        // Check for verb endings
         if (word.endsWith('ing') || word.endsWith('ed')) return true;
+        // Chinese verbs
+        if (CHINESE_VERBS.has(word)) return true;
+        return false;
+    }
+
+    /**
+     * Check if word is an abstract noun (English or Chinese)
+     */
+    private isAbstractNoun(word: string): boolean {
+        if (ABSTRACT_NOUNS.has(word)) return true;
+        if (CHINESE_ABSTRACT_NOUNS.has(word)) return true;
         return false;
     }
 
@@ -340,14 +395,22 @@ export class WritingSensor {
     }
 
     /**
-     * Get text that was added
+     * Get text that was added (with paste detection)
      */
     private getAddedText(oldText: string, newText: string): string {
-        if (newText.length > oldText.length) {
-            // Simple heuristic: assume text was added at the end
-            // For more accuracy, could use diff algorithm
-            return newText.substring(oldText.length);
+        const lengthDiff = newText.length - oldText.length;
+
+        // Large text addition (> 50 chars) = likely paste, skip
+        if (lengthDiff > 50) {
+            console.log('[Sensor] Large text addition detected (paste?), skipping WPM count:', lengthDiff, 'chars');
+            return '';
         }
+
+        // Normal typing
+        if (lengthDiff > 0) {
+            return newText.substring(newText.length - lengthDiff);
+        }
+
         return '';
     }
 

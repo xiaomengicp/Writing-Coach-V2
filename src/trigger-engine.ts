@@ -15,12 +15,36 @@ export class TriggerEngine {
     private triggerHistory: TriggerEvent[] = [];
     private checkInterval: number | null = null;
     private onTrigger: ((result: TriggerResult) => void) | null = null;
+    private isPaused: boolean = false;
 
     // Dev mode settings
     private devMode: boolean = false;
 
     constructor(rules: TriggerRules) {
         this.rules = rules;
+    }
+
+    /**
+     * Pause trigger checking
+     */
+    pause(): void {
+        this.isPaused = true;
+        console.log('[TriggerEngine] Paused');
+    }
+
+    /**
+     * Resume trigger checking
+     */
+    resume(): void {
+        this.isPaused = false;
+        console.log('[TriggerEngine] Resumed');
+    }
+
+    /**
+     * Check if paused
+     */
+    getIsPaused(): boolean {
+        return this.isPaused;
     }
 
     /**
@@ -84,6 +108,11 @@ export class TriggerEngine {
         writingType: string,
         context: WritingContext
     ): TriggerResult | null {
+
+        // Skip checking if paused
+        if (this.isPaused) {
+            return null;
+        }
 
         const now = Date.now();
 
