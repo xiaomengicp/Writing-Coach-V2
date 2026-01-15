@@ -10,6 +10,5 @@ declare module 'segmentit' {
         doSegment(text: string): SegmentResult[];
     }
 
-    function Segment(): SegmentInstance;
-    export default Segment;
+    export function Segment(): SegmentInstance;
 }

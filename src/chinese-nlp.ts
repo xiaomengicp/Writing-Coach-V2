@@ -3,7 +3,7 @@
  * This is a pure JavaScript solution that works in Obsidian plugin environment
  */
 
-import Segment from 'segmentit';
+import { Segment } from 'segmentit';
 
 // Initialize segmentit
 const segmentit = Segment();

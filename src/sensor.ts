@@ -1,7 +1,7 @@
 import { Editor } from 'obsidian';
 import { WritingMetrics, EditEvent } from './types';
 import { CHINESE_ADJECTIVES, CHINESE_ABSTRACT_NOUNS, CHINESE_VERBS } from './chinese-words';
-import Segment from 'segmentit';
+import { Segment } from 'segmentit';
 
 // Initialize Chinese segmentation
 const segmentit = Segment();
